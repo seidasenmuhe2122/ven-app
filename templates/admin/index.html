@@ -1,0 +1,120 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static control_center %}
+
+{% block title %}{% translate "Site administration" %} | News & AdSense Admin{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style nonce="{{ csp_nonce }}">
+    #content { padding: 16px !important; }
+    .news-dashboard-container { margin-bottom: 24px; }
+    .dashboard-title-row { align-items: center; display: flex; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .dashboard-title { color: var(--admin-shell-text); font-size: 1.2rem; font-weight: 700; margin: 0; }
+    .dashboard-title-link { color: var(--admin-shell-accent) !important; font-size: 0.82rem; text-decoration: none; }
+    .dashboard-title-link:hover { text-decoration: underline; }
+    .dashboard-section { margin-bottom: 20px; }
+    .dashboard-section-heading { align-items: center; display: flex; gap: 10px; margin-bottom: 10px; }
+    .dashboard-section-heading h3 { color: var(--admin-shell-text); font-size: 0.95rem; margin: 0; }
+    .dashboard-section-heading span { color: var(--admin-shell-muted); font-size: 0.78rem; }
+    .dashboard-metrics-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .metric-card { --metric-accent: var(--admin-shell-accent); background: linear-gradient(145deg, var(--admin-shell-card), var(--admin-shell-soft)); border: 1px solid var(--admin-shell-border); border-top: 3px solid var(--metric-accent); border-radius: 8px; box-shadow: var(--admin-shell-shadow), 0 0 18px color-mix(in srgb, var(--metric-accent) 12%, transparent); color: inherit; cursor: pointer; display: block; min-width: 0; padding: 15px; text-decoration: none !important; transition: border-color 0.16s ease, transform 0.16s ease; }
+    .metric-card:nth-child(2) { --metric-accent: var(--admin-shell-teal); }
+    .metric-card:nth-child(3) { --metric-accent: var(--admin-shell-accent-2); }
+    .metric-card:nth-child(4) { --metric-accent: var(--admin-shell-magenta); }
+    .metric-card h4 { color: var(--admin-shell-muted); font-size: 0.78rem; font-weight: 600; margin: 0 0 8px; }
+    .metric-card strong { color: var(--admin-shell-text); display: block; font-size: 1.45rem; font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; text-shadow: 0 0 16px color-mix(in srgb, var(--metric-accent) 22%, transparent); }
+    .metric-card small { color: var(--admin-shell-muted); display: block; font-size: 0.72rem; margin-top: 7px; }
+    .metric-card[data-accent="teal"] { --metric-accent: var(--admin-shell-teal); }
+    .metric-card[data-accent="violet"] { --metric-accent: var(--admin-shell-accent-2); }
+    .metric-card[data-accent="blue"] { --metric-accent: var(--admin-shell-blue); }
+    .metric-card[data-accent="magenta"] { --metric-accent: var(--admin-shell-magenta); }
+    .metric-card:hover, .metric-card:focus-visible { border-color: var(--metric-accent); transform: translateY(-2px); }
+    .dashboard-links-bar { display: flex; flex-wrap: wrap; gap: 8px; font-size: 0.82rem; }
+    .dashboard-links-bar a { background: linear-gradient(110deg, var(--admin-shell-soft), var(--admin-shell-card)); border: 1px solid var(--admin-shell-border); border-radius: 6px; color: var(--admin-shell-accent) !important; padding: 7px 10px; text-decoration: none; }
+    .dashboard-links-bar a:hover, .dashboard-links-bar a:focus-visible { border-color: var(--admin-shell-accent); box-shadow: 0 0 14px color-mix(in srgb, var(--admin-shell-accent) 18%, transparent); text-decoration: none; }
+    #content-main > .module { background: transparent !important; border: 0 !important; box-shadow: none !important; padding: 0; }
+    #content-main .app-list table { background: linear-gradient(145deg, var(--admin-shell-panel), var(--admin-shell-card)) !important; border: 1px solid var(--admin-shell-border); border-collapse: separate; border-radius: 8px; border-spacing: 0; box-shadow: var(--admin-shell-shadow), 0 0 12px color-mix(in srgb, var(--admin-shell-blue) 8%, transparent); margin: 0 0 12px; overflow: hidden; width: 100%; }
+    #content-main .app-list caption { background: linear-gradient(100deg, var(--admin-shell-soft), var(--admin-shell-card)) !important; border-bottom: 1px solid var(--admin-shell-border); border-left: 3px solid var(--admin-shell-accent); color: var(--admin-shell-text) !important; font-size: 0.8rem; font-weight: 700; padding: 10px 14px; text-align: left; }
+    #content-main .app-list caption a { color: var(--admin-shell-text) !important; display: block; text-decoration: none !important; }
+    #content-main .app-list tbody tr { border-bottom: 1px solid var(--admin-shell-border); transition: background-color 0.14s ease; }
+    #content-main .app-list tbody tr:nth-child(even) { background: color-mix(in srgb, var(--admin-shell-panel) 88%, var(--admin-shell-accent) 12%) !important; }
+    #content-main .app-list tbody tr:hover { background: color-mix(in srgb, var(--admin-shell-panel) 82%, var(--admin-shell-accent) 18%) !important; }
+    #content-main .app-list th, #content-main .app-list td { background: transparent !important; border-color: var(--admin-shell-border) !important; color: var(--admin-shell-text) !important; padding: 8px 12px; text-align: left; }
+    #content-main .app-list th a { color: var(--admin-shell-accent) !important; font-weight: 600; text-decoration: none !important; }
+    #content-main .app-list th a:hover, #content-main .app-list th a:focus-visible { color: var(--admin-shell-teal) !important; text-decoration: underline !important; }
+    #content-main .app-list a:focus-visible { outline: 2px solid var(--admin-shell-accent); outline-offset: 2px; }
+    .addlink, .changelink { border-radius: 5px; display: inline-block; font-size: 0.75rem; font-weight: 600; margin-left: 5px; min-width: 54px; padding: 6px 10px; text-align: center; text-decoration: none !important; }
+    .addlink { background: linear-gradient(120deg, var(--admin-shell-accent), var(--admin-shell-teal)) !important; color: var(--admin-shell-accent-contrast) !important; }
+    .changelink { background: linear-gradient(120deg, var(--admin-shell-accent-2), var(--admin-shell-blue)) !important; border: 1px solid var(--admin-shell-border); color: var(--admin-shell-accent-contrast) !important; }
+    #content-main .app-list a.addlink, #content-main .app-list a.changelink { color: var(--admin-shell-accent-contrast) !important; }
+    @media (max-width: 900px) { .dashboard-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 560px) { #content { padding: 12px !important; } .dashboard-metrics-grid { grid-template-columns: 1fr; } .dashboard-title-row { align-items: flex-start; flex-direction: column; } }
+</style>
+{% endblock %}
+
+{% block content %}
+{% control_center_data as dashboard_data %}
+<div id="content-main">
+    <div class="news-dashboard-container">
+        <div class="dashboard-title-row">
+            <h2 class="dashboard-title">News &amp; Advertising Control</h2>
+            <a class="dashboard-title-link" href="{% url 'admin-analytics' %}">Open full analytics</a>
+        </div>
+        <section class="dashboard-section" aria-labelledby="news-controls-title">
+            <div class="dashboard-section-heading"><h3 id="news-controls-title">News operations</h3><span>Publishing and readership</span></div>
+            <div class="dashboard-metrics-grid">
+                <a class="metric-card" data-metric="total-articles" href="{% url 'admin:news_article_changelist' %}"><h4>Total stories</h4><strong>{{ dashboard_data.summary_metrics.total_articles|default:0 }}</strong><small>All content statuses</small></a>
+                <a class="metric-card" data-accent="teal" data-metric="published-articles" href="{% url 'admin:news_article_changelist' %}?status__exact=published"><h4>Published</h4><strong>{{ dashboard_data.summary_metrics.published_articles|default:0 }}</strong><small>Live stories</small></a>
+                <a class="metric-card" data-accent="violet" data-metric="draft-articles" href="{% url 'admin:news_article_changelist' %}?status__exact=draft"><h4>Drafts</h4><strong>{{ dashboard_data.summary_metrics.draft_articles|default:0 }}</strong><small>Awaiting publication</small></a>
+                <a class="metric-card" data-accent="magenta" data-metric="articles-in-review" href="{% url 'admin:news_article_changelist' %}?status__exact=under_review"><h4>In review</h4><strong>{{ dashboard_data.summary_metrics.articles_in_review|default:0 }}</strong><small>Editorial queue</small></a>
+                <a class="metric-card" data-accent="blue" data-metric="daily-views" href="{% url 'admin-analytics' %}"><h4>News views today</h4><strong>{{ dashboard_data.summary_metrics.daily_views|default:0 }}</strong><small>Article engagement</small></a>
+                <a class="metric-card" data-metric="active-readers" href="{% url 'admin-analytics' %}"><h4>Active readers</h4><strong>{{ dashboard_data.summary_metrics.active_users|default:0 }}</strong><small>Last 30 days</small></a>
+            </div>
+        </section>
+        <section class="dashboard-section" aria-labelledby="ad-controls-title">
+            <div class="dashboard-section-heading"><h3 id="ad-controls-title">Advertising tracking</h3><span>{% if dashboard_data.ad_metrics.ads_enabled %}Network active{% else %}Advertising paused{% endif %}</span></div>
+            <div class="dashboard-metrics-grid">
+                <a class="metric-card" data-accent="teal" data-metric="ad-impressions" href="{% url 'admin:accounts_adsensereport_changelist' %}"><h4>Ad views</h4><strong>{{ dashboard_data.ad_metrics.total_ad_views|default:0 }}</strong><small>Last 7 days</small></a>
+                <a class="metric-card" data-accent="blue" data-metric="ad-clicks" href="{% url 'admin:accounts_adsensereport_changelist' %}"><h4>Ad clicks</h4><strong>{{ dashboard_data.ad_metrics.total_ad_clicks|default:0 }}</strong><small>Last 7 days</small></a>
+                <a class="metric-card" data-accent="violet" data-metric="ad-revenue" href="{% url 'admin:accounts_adsensereport_changelist' %}"><h4>Ad revenue</h4><strong>${{ dashboard_data.ad_metrics.ad_revenue|floatformat:2 }}</strong><small>Last 7 days</small></a>
+                <a class="metric-card" data-accent="magenta" data-metric="ad-ctr" href="{% url 'admin:accounts_adsensereport_changelist' %}"><h4>Click-through rate</h4><strong>{{ dashboard_data.ad_metrics.ad_ctr|default:0 }}%</strong><small>{{ dashboard_data.ad_metrics.ad_network|upper }}</small></a>
+            </div>
+        </section>
+        <div class="dashboard-links-bar">
+            <a href="{% url 'admin:news_article_changelist' %}">Manage stories</a>
+            <a href="{% url 'admin:news_comment_changelist' %}">Moderate comments</a>
+            <a href="{% url 'admin:accounts_adsensereport_changelist' %}">Advertising reports</a>
+            <a href="{% url 'admin:news_systemsetting_changelist' %}">Ad settings</a>
+            <a href="{% url 'admin-analytics' %}">Readership analytics</a>
+            <a href="{% url 'admin-analytics' %}">Top Stories</a>
+            <a href="{% url 'admin-analytics' %}">Traffic / Readership Breakdown</a>
+        </div>
+    </div>
+    {{ dashboard_data|json_script:"dashboard-data" }}
+    <script nonce="{{ csp_nonce }}">
+        const dashboardData = JSON.parse(document.getElementById('dashboard-data').textContent);
+        window.newsDashboardData = dashboardData;
+    </script>
+
+    <div class="module">
+        {% if app_list %}
+            {% for app in app_list %}
+                <div class="app-{{ app.app_label }} app-list">
+                    <table>
+                        <caption><a href="{{ app.app_url }}" class="section" title="{% translate 'Models in the application' %}">{{ app.name }}</a></caption>
+                        {% for model in app.models %}
+                            <tr class="model-{{ model.object_name|lower }}">
+                                <th scope="row"><a href="{{ model.admin_url }}"{% if model.view_only %} class="viewlink"{% endif %}>{{ model.name }}</a></th>
+                                <td>{% if model.add_url %}<a href="{{ model.add_url }}" class="addlink">{% translate 'Add' %}</a>{% endif %}</td>
+                                <td>{% if model.admin_url %}<a href="{{ model.admin_url }}" class="changelink">{% translate 'Change' %}</a>{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </table>
+                </div>
+            {% endfor %}
+        {% else %}
+            <p>{% translate "You don't have permission to view or edit anything." %}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,41 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+
+{% block branding %}
+<div id="branding">
+  {% if site_settings.logo %}
+    <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.app_name|default:'Admin' }} logo" style="max-height: 32px; max-width: 140px; margin-right: 10px; vertical-align: middle;">
+  {% endif %}
+  <h1 id="site-name"><a href="{% url 'admin:index' %}">{{ site_settings.app_name|default:'Admin' }}</a></h1>
+</div>
+{% endblock %}
+
+{% block nav-sidebar %}
+{{ block.super }}
+{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/control_center.css' %}">
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js"></script>
+<script src="{% static 'news/admin_rich_text_editor.js' %}?v=3"></script>
+<script nonce="{{ csp_nonce }}">
+    document.addEventListener('DOMContentLoaded', function () {
+        const navSidebar = document.getElementById('nav-sidebar');
+        if (!navSidebar) return;
+
+        const appNames = navSidebar.querySelectorAll('.app-name, .module caption, .section');
+        appNames.forEach(function (node) {
+            const text = (node.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+            if (text.includes('django')) {
+                const parent = node.closest('.module');
+                if (parent) parent.style.display = 'none';
+            }
+        });
+    });
+</script>
+{% endblock %}

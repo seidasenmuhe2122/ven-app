@@ -1,0 +1,348 @@
+{% load static sanitization %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ article.title }} | {{ site_settings.app_name|default:'Royal Pro' }}</title>
+    <script src="{% static 'news/admin_access_hold.js' %}" defer></script>
+    <style nonce="{{ csp_nonce }}">
+      :root {
+        --bg: #f4f7fb;
+        --panel: #ffffff;
+        --text: #0f172a;
+        --muted: #596780;
+        --primary: #1d4ed8;
+        --primary-soft: #dfe9ff;
+        --border: #e7edf7;
+      }
+
+      body.dark-mode {
+        --bg: #020817;
+        --panel: #0f172a;
+        --text: #e2e8f0;
+        --muted: #a5b4cf;
+        --primary: #93c5fd;
+        --primary-soft: rgba(59, 130, 246, 0.18);
+        --border: rgba(148, 163, 184, 0.18);
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #eef6ff 0%, #f8fafc 32%, #eef2ff 100%);
+        color: var(--text);
+        font-family: Arial, Helvetica, sans-serif;
+        transition: background 0.2s ease, color 0.2s ease;
+      }
+
+      body.dark-mode {
+        background: linear-gradient(180deg, #020817 0%, #0f172a 32%, #111827 100%);
+        color: var(--text);
+      }
+
+      a { color: inherit; text-decoration: none; }
+      .page {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 32px 18px 60px;
+      }
+
+      .article-site-brand {
+        align-items: center;
+        color: var(--text);
+        display: flex;
+        font-weight: 800;
+        gap: 10px;
+        margin-bottom: 16px;
+        touch-action: none;
+        user-select: none;
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+      }
+
+      .article-site-brand img {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        height: 34px;
+        object-fit: contain;
+        width: 34px;
+      }
+
+      .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        border-radius: 999px;
+        background: white;
+        border: 1px solid var(--border);
+        font-weight: 700;
+        margin-bottom: 20px;
+      }
+
+      .footer-links {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 12px;
+      }
+
+      .footer-links.top {
+        margin-top: 18px;
+      }
+
+      .footer-links.bottom {
+        margin-top: 8px;
+      }
+
+      .footer-links a {
+        color: var(--muted);
+        font-size: 0.88rem;
+        font-weight: 600;
+      }
+
+      body.dark-mode .back-link,
+      body.dark-mode .article-shell {
+        background: rgba(15, 23, 42, 0.9);
+        border-color: var(--border);
+        color: var(--text);
+      }
+
+      .article-shell {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 18px 36px rgba(15, 23, 42, 0.08);
+      }
+
+      .hero {
+        min-height: 320px;
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        background-color: #dfe9ff;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(180deg, rgba(15,23,42,0.1), rgba(15,23,42,0.76));
+      }
+
+      .hero-content {
+        position: relative;
+        z-index: 1;
+        padding: 28px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        color: white;
+      }
+
+      .tag {
+        display: inline-block;
+        background: rgba(255,255,255,0.14);
+        border: 1px solid rgba(255,255,255,0.25);
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        width: fit-content;
+      }
+
+      .title {
+        margin: 16px 0 12px;
+        font-size: clamp(2rem, 3vw, 3rem);
+        line-height: 1.08;
+      }
+
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        color: rgba(255,255,255,0.85);
+        font-size: 0.82rem;
+      }
+
+      .notification-bell {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 38px;
+        height: 38px;
+        padding: 0;
+        border: 1px solid rgba(255,255,255,0.5);
+        border-radius: 50%;
+        background: rgba(15,23,42,0.58);
+        color: white;
+        cursor: pointer;
+      }
+
+      .notification-bell svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2; }
+      .notification-bell.is-sent { color: #fbbf24; border-color: #fbbf24; }
+      .notification-bell.is-sent svg { fill: currentColor; }
+
+      .body {
+        padding: 28px 22px 40px;
+      }
+
+      .summary {
+        margin: 0 0 20px;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.7;
+      }
+
+      .content {
+        font-size: 1rem;
+        line-height: 1.85;
+        color: var(--text);
+        white-space: pre-line;
+      }
+
+      .policy-panel { display: none; }
+      .policy-panel.policy-open { display: block; }
+      .policy-close { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; color: var(--muted); cursor: pointer; float: right; font-size: .8rem; font-weight: 700; padding: 6px 10px; }
+      .policy-close:hover { color: var(--text); }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="article-site-brand" data-admin-access-hold data-admin-login-encoded="{{ admin_login_url_encoded }}">
+        {% if site_settings.logo %}
+          <img src="{{ site_settings.logo.url }}" alt="">
+        {% else %}
+          <span class="brand-mark"></span>
+        {% endif %}
+        <span>{{ site_settings.app_name|default:'Royal Pro' }}</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px;">
+        <a class="back-link" href="{{ ui_buttons.back_to_news.url }}">{{ ui_buttons.back_to_news.label }}</a>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+          {% if site_settings.about_content %}
+            <a class="back-link" href="{{ ui_buttons.about.url }}">{{ ui_buttons.about.label }}</a>
+          {% endif %}
+          {% if site_settings.contact_content %}
+            <a class="back-link" href="{{ ui_buttons.contact.url }}">{{ ui_buttons.contact.label }}</a>
+          {% endif %}
+          <button class="back-link" id="theme-toggle" type="button" aria-label="Toggle dark mode">{{ ui_buttons.theme.label }}</button>
+        </div>
+      </div>
+
+      <article class="article-shell">
+        <div
+          class="hero"
+          style="background-image: url('{% if article.image_url %}{{ article.image_url }}{% elif article.cover_image %}{{ article.cover_image.url }}{% else %}https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&w=1200&q=80{% endif %}');"
+        >
+          <div class="hero-content">
+            <span class="tag">{{ article.category.name }}</span>
+            <button class="notification-bell" type="button" data-article-id="{{ article.id }}" aria-label="Check notification for {{ article.title|escape }}" title="Article notification">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+            </button>
+            <h1 class="title">{{ article.title }}</h1>
+            <div class="meta">
+              <span>{{ article.author.username|default:'Staff Writer' }}</span>
+              <span>•</span>
+              <span>{{ article.published_at|date:'M d, Y'|default:'Recently published' }}</span>
+              <span>•</span>
+              <span>{{ article.views_count }} views</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="body">
+          {% if article.summary %}
+            <p class="summary">{{ article.summary }}</p>
+          {% endif %}
+
+          <div class="content">{{ article.content|sanitize_html }}</div>
+        </div>
+      </article>
+
+      <div class="footer-links top" id="about-policy">
+        {% if site_settings.about_content %}
+          <div class="policy-panel"><button class="policy-close" type="button" aria-label="Close About">Close</button>{{ site_settings.about_content|sanitize_html }}</div>
+        {% endif %}
+      </div>
+      <div class="footer-links top" id="contact-policy">
+        {% if site_settings.contact_content %}
+          <div class="policy-panel"><button class="policy-close" type="button" aria-label="Close Contact">Close</button>{{ site_settings.contact_content|sanitize_html }}</div>
+        {% endif %}
+      </div>
+      <div class="footer-links bottom">
+        {% if site_settings.terms_content %}
+          <a class="back-link" href="#terms-policy">Terms</a>
+          <div id="terms-policy" class="policy-panel"><button class="policy-close" type="button" aria-label="Close Terms">Close</button>{{ site_settings.terms_content|sanitize_html }}</div>
+        {% endif %}
+        {% if site_settings.privacy_policy_content %}
+          <a class="back-link" href="#privacy-policy">Privacy</a>
+          <div id="privacy-policy" class="policy-panel"><button class="policy-close" type="button" aria-label="Close Privacy">Close</button>{{ site_settings.privacy_policy_content|sanitize_html }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <script nonce="{{ csp_nonce }}">
+      const themeToggle = document.getElementById('theme-toggle');
+      const savedTheme = localStorage.getItem('royal-pro-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+      const applyTheme = (isDarkMode) => {
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        if (themeToggle) {
+          themeToggle.textContent = isDarkMode ? '{{ ui_buttons.theme.dark_label|default:"Light mode"|escapejs }}' : '{{ ui_buttons.theme.light_label|default:"Dark mode"|escapejs }}';
+        }
+        localStorage.setItem('royal-pro-theme', String(isDarkMode));
+      };
+
+      const enabled = savedTheme ? savedTheme === 'true' : prefersDark;
+      applyTheme(enabled);
+
+      themeToggle?.addEventListener('click', () => {
+        const nextState = !document.body.classList.contains('dark-mode');
+        applyTheme(nextState);
+      });
+
+      const syncPolicyPanel = () => {
+        document.querySelectorAll('.policy-panel').forEach((panel) => panel.classList.remove('policy-open'));
+        const target = document.getElementById(window.location.hash.slice(1));
+        if (target) {
+          const panel = target.classList.contains('policy-panel') ? target : target.querySelector('.policy-panel');
+          panel?.classList.add('policy-open');
+        }
+      };
+
+      window.addEventListener('hashchange', syncPolicyPanel);
+      syncPolicyPanel();
+      document.querySelectorAll('.policy-close').forEach((closeButton) => {
+        closeButton.addEventListener('click', () => {
+          history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+          syncPolicyPanel();
+        });
+      });
+
+      document.querySelectorAll('.notification-bell').forEach((bell) => {
+        bell.addEventListener('click', async () => {
+          const articleId = bell.dataset.articleId;
+          try {
+            const response = await fetch(`/api/article-notifications/${articleId}/`, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('Notification status unavailable');
+            const data = await response.json();
+            bell.classList.toggle('is-sent', data.is_sent);
+            bell.title = data.is_sent ? 'Notification sent' : 'Notification queued';
+            bell.setAttribute('aria-label', data.is_sent ? `Notification sent for ${data.title}` : `Notification queued for ${data.title}`);
+          } catch (error) {
+            bell.title = 'Notification status unavailable';
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
