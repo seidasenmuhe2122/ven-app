@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import '../services/bookmark_service.dart';
 
 class BookmarksScreen extends StatefulWidget {
-  const BookmarksScreen({super.key});
+  const BookmarksScreen({super.key, required this.onOpenArticle});
+
+  final ValueChanged<String> onOpenArticle;
 
   @override
   State<BookmarksScreen> createState() => _BookmarksScreenState();
@@ -66,6 +68,8 @@ class _BookmarksScreenState extends State<BookmarksScreen> {
                               ),
                           ],
                         ),
+                        onTap: () =>
+                            widget.onOpenArticle(article.id.toString()),
                         trailing: IconButton(
                           icon: const Icon(Icons.delete_outline),
                           onPressed: () async {

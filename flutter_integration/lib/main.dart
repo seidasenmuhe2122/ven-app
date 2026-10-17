@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -13,6 +12,7 @@ import 'screens/article_detail_screen.dart';
 import 'screens/auth_screen.dart';
 import 'screens/bookmarks_screen.dart';
 import 'screens/settings_screen.dart';
+import 'services/ad_consent_service.dart';
 import 'services/ad_settings_service.dart';
 import 'services/article_service.dart';
 import 'services/bookmark_service.dart';
@@ -26,18 +26,26 @@ import 'widgets/native_ad_widget.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await MobileAds.instance.initialize();
+  final canRequestAds = await AdConsentService.initialize();
 
   final deepLinkService = DeepLinkService();
   await deepLinkService.initialize();
 
-  runApp(MyApp(deepLinkService: deepLinkService));
+  runApp(MyApp(
+    deepLinkService: deepLinkService,
+    canRequestAds: canRequestAds,
+  ));
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key, required this.deepLinkService});
+  const MyApp({
+    super.key,
+    required this.deepLinkService,
+    required this.canRequestAds,
+  });
 
   final DeepLinkService deepLinkService;
+  final bool canRequestAds;
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -67,7 +75,11 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _loadAdSettings() async {
-    final settings = await AdSettingsService.fetchSettings(baseUrl: AppConfig.apiBaseUrl);
+    final settings = await AdSettingsService.fetchSettings(
+      baseUrl: AppConfig.apiBaseUrl,
+      canRequestAds: widget.canRequestAds,
+    );
+    if (!mounted) return;
     setState(() => _adSettings = settings);
   }
 
@@ -78,7 +90,8 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> _checkAppVersion() async {
-    final versionInfo = await VersionUpdateService.fetchVersionInfo(baseUrl: AppConfig.apiBaseUrl);
+    final versionInfo = await VersionUpdateService.fetchVersionInfo(
+        baseUrl: AppConfig.apiBaseUrl);
     if (!mounted) return;
 
     final packageInfo = await PackageInfo.fromPlatform();
@@ -114,9 +127,12 @@ class _MyAppState extends State<MyApp> {
               TextButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  final url = versionInfo.playStoreUrl.isNotEmpty ? versionInfo.playStoreUrl : versionInfo.appStoreUrl;
+                  final url = versionInfo.playStoreUrl.isNotEmpty
+                      ? versionInfo.playStoreUrl
+                      : versionInfo.appStoreUrl;
                   if (url.isNotEmpty) {
-                    await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+                    await launchUrl(Uri.parse(url),
+                        mode: LaunchMode.externalApplication);
                   }
                 },
                 child: const Text('Update Now'),
@@ -126,7 +142,6 @@ class _MyAppState extends State<MyApp> {
         );
       });
     }
-
   }
 
   void _handleLanguageChanged(Locale locale) {
@@ -151,7 +166,7 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Royal Pro',
+      title: 'Digital Tech',
       locale: _locale,
       supportedLocales: LanguageService.supportedLocales,
       localizationsDelegates: const [
@@ -175,6 +190,7 @@ class _MyAppState extends State<MyApp> {
               adSettings: _adSettings,
               fontSize: _fontSize,
               onFontSizeChanged: _handleFontSizeChanged,
+              onExit: () => setState(() => currentArticleId = null),
             ),
     );
   }
@@ -221,7 +237,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((result) {
+    _connectivitySubscription =
+        Connectivity().onConnectivityChanged.listen((result) {
       if (!mounted) return;
       _loadLatestArticles();
     });
@@ -241,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadCategories() async {
     try {
-      final categories = await ArticleService.fetchCategories(baseUrl: AppConfig.apiBaseUrl);
+      final categories =
+          await ArticleService.fetchCategories(baseUrl: AppConfig.apiBaseUrl);
       if (!mounted) return;
       setState(() {
         _categories = categories;
@@ -376,7 +394,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final shouldShowAds = widget.adSettings?.adsEnabled ?? true;
+    final shouldShowAds = widget.adSettings?.adsEnabled ?? false;
 
     return Scaffold(
       appBar: AppBar(
@@ -402,7 +420,12 @@ class _HomeScreenState extends State<HomeScreen> {
             icon: const Icon(Icons.bookmark_outline),
             onPressed: () {
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const BookmarksScreen()),
+                MaterialPageRoute(
+                  builder: (_) => BookmarksScreen(
+                    onOpenArticle: (articleId) =>
+                        _openArticle(context, articleId),
+                  ),
+                ),
               );
             },
           ),
@@ -502,7 +525,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: SizedBox(
               height: 42,
               child: _isLoadingCategories
-                  ? const Center(child: SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)))
+                  ? const Center(
+                      child: SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2)))
                   : ListView.separated(
                       scrollDirection: Axis.horizontal,
                       itemCount: _categories.length + 1,
@@ -526,7 +553,8 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: Text(category.name),
                           selected: isSelected,
                           onSelected: (_) {
-                            setState(() => _selectedCategoryId = isSelected ? null : category.id);
+                            setState(() => _selectedCategoryId =
+                                isSelected ? null : category.id);
                             _loadLatestArticles();
                           },
                         );
@@ -576,14 +604,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w700,
-                                    fontSize: FontSizeService.scale(widget.fontSize, 14),
+                                    fontSize: FontSizeService.scale(
+                                        widget.fontSize, 14),
                                   ),
                                 ),
                                 const Spacer(),
                                 Text(
                                   '${item.readMinutes} min read',
                                   style: TextStyle(
-                                    fontSize: FontSizeService.scale(widget.fontSize, 12),
+                                    fontSize: FontSizeService.scale(
+                                        widget.fontSize, 12),
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -612,7 +642,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Text(
                                   'No articles found for this filter.',
                                   style: TextStyle(
-                                    fontSize: FontSizeService.scale(widget.fontSize, 16),
+                                    fontSize: FontSizeService.scale(
+                                        widget.fontSize, 16),
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -629,18 +660,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
                             return Column(
                               children: [
-                                if (isNativeSlot && shouldShowAds)
+                                if (isNativeSlot &&
+                                    shouldShowAds &&
+                                    widget
+                                        .adSettings!.nativeAdUnitId.isNotEmpty)
                                   NativeAdWidget(
-                                    adUnitId: widget.adSettings?.nativeAdUnitId ?? 'ca-app-pub-3940256099942544/2247696110',
+                                    adUnitId: widget.adSettings!.nativeAdUnitId,
                                   ),
                                 Card(
                                   child: ListTile(
                                     title: Text(
                                       article.title,
-                                      style: TextStyle(fontSize: FontSizeService.scale(widget.fontSize, 17)),
+                                      style: TextStyle(
+                                          fontSize: FontSizeService.scale(
+                                              widget.fontSize, 17)),
                                     ),
                                     subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         const SizedBox(height: 4),
                                         if (article.summary.isNotEmpty)
@@ -648,13 +685,16 @@ class _HomeScreenState extends State<HomeScreen> {
                                             article.summary,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(fontSize: FontSizeService.scale(widget.fontSize, 13)),
+                                            style: TextStyle(
+                                                fontSize: FontSizeService.scale(
+                                                    widget.fontSize, 13)),
                                           ),
                                         const SizedBox(height: 6),
                                         Text(
                                           '${article.categoryName} • ${article.viewsCount} views',
                                           style: TextStyle(
-                                            fontSize: FontSizeService.scale(widget.fontSize, 12),
+                                            fontSize: FontSizeService.scale(
+                                                widget.fontSize, 12),
                                             color: Colors.grey,
                                           ),
                                         ),
@@ -662,7 +702,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     ),
                                     trailing: IconButton(
                                       icon: Icon(
-                                        _bookmarkedIds.contains(article.id) ? Icons.bookmark : Icons.bookmark_border,
+                                        _bookmarkedIds.contains(article.id)
+                                            ? Icons.bookmark
+                                            : Icons.bookmark_border,
                                       ),
                                       onPressed: () async {
                                         await BookmarkService.toggleBookmark(
@@ -675,7 +717,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                       },
                                     ),
                                     onTap: () {
-                                      _openArticle(context, article.id.toString());
+                                      _openArticle(
+                                          context, article.id.toString());
                                     },
                                   ),
                                 ),
@@ -685,9 +728,9 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
             ),
           ),
-          if (shouldShowAds)
+          if (shouldShowAds && widget.adSettings!.bannerAdUnitId.isNotEmpty)
             BannerAdWidget(
-              adUnitId: widget.adSettings?.bannerAdUnitId ?? 'ca-app-pub-3940256099942544/6300978111',
+              adUnitId: widget.adSettings!.bannerAdUnitId,
             ),
         ],
       ),

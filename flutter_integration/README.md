@@ -1,74 +1,106 @@
-# Flutter Social Sharing + Deep Linking Integration
+# Digital Tech Mobile App
 
-This folder contains a drop-in Flutter integration for:
+This is the standalone Flutter application for the Digital Tech article
+service. It contains article browsing/search, article details, bookmarks,
+reading history, authentication, deep links, sharing, text-to-speech, settings,
+and optional AdMob placements.
 
-- social sharing via `share_plus`
-- deep linking via `app_links`
-- linking a shared article URL like `https://myapp.com/article/123` directly to an article detail screen
+## Verified local configuration
 
-## Android deep link config
+- Flutter package: `royal_pro_flutter`
+- Android application ID: `com.venapp.app`
+- iOS bundle ID: `com.digitaltech.app`
+- Version/build: `1.0.0+1` (from `pubspec.yaml`)
+- Android min/target/compile SDK: 24 / 36 / 36
+- Android/iOS app display name: Digital Tech
+- Default API base: `https://ven-app.onrender.com`
 
-The Android manifest is included at
-`android/app/src/main/AndroidManifest.xml`. It configures the Flutter launch
-activity and verified HTTPS links for `/article/` and `/articles/` URLs on
-`myapp.com`. Replace `myapp.com` with the production domain in the manifest,
-and publish a matching `assetlinks.json` file for Android App Links verification.
+The current default API host returned HTTP 404 for the app's tested API routes.
+Supply the correct deployed API base when running or building:
 
-The manifest uses Google's sample AdMob application ID. Replace it with your
-AdMob application ID before publishing.
-
-Host the asset links file at
-`https://myapp.com/.well-known/assetlinks.json`:
-
-```json
-[
-  {
-    "relation": ["delegate_permission/common.handle_all_urls"],
-    "target": {
-      "namespace": "android_app",
-      "package_name": "YOUR_ANDROID_APPLICATION_ID",
-      "sha256_cert_fingerprints": ["YOUR_SIGNING_CERTIFICATE_SHA256"]
-    }
-  }
-]
+```powershell
+flutter run --dart-define=API_BASE_URL=https://your-api.example
 ```
 
-## iOS universal link config
+Use an HTTPS production endpoint. Do not put credentials or signing passwords
+in Dart defines or source files.
 
-Add the following to `ios/Runner/Info.plist`:
+## Android release signing and AdMob
 
-```xml
-<key>CFBundleURLTypes</key>
-<array>
-  <dict>
-    <key>CFBundleURLSchemes</key>
-    <array>
-      <string>myapp</string>
-    </array>
-  </dict>
-</array>
-<key>com.apple.developer.associated-domains</key>
-<array>
-  <string>applinks:myapp.com</string>
-</array>
+Debug builds use Google's Android test AdMob application ID. Release builds
+refuse to use the debug key or the test AdMob ID.
+
+1. Generate an upload keystore locally:
+
+   ```powershell
+   keytool -genkeypair -v -keystore android\upload-keystore.jks `
+     -alias upload -keyalg RSA -keysize 2048 -validity 10000
+   ```
+
+2. Create the ignored file `android\key.properties` with the local keystore
+   details. Resolve `storeFile` relative to the `android` directory:
+
+   ```properties
+   storeFile=upload-keystore.jks
+   storePassword=YOUR_LOCAL_KEYSTORE_PASSWORD
+   keyAlias=upload
+   keyPassword=YOUR_LOCAL_KEY_PASSWORD
+   ```
+
+3. Set the production Android AdMob application ID in the current PowerShell
+   process and build:
+
+   ```powershell
+   $env:ORG_GRADLE_PROJECT_ADMOB_APP_ID = "ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy"
+   flutter build appbundle --release `
+     --dart-define=API_BASE_URL=https://your-api.example
+   Remove-Item Env:ORG_GRADLE_PROJECT_ADMOB_APP_ID
+   ```
+
+4. Configure real banner/native ad-unit IDs in the backend settings endpoint.
+   Ads remain disabled unless consent is permitted and the backend returns a
+   valid banner unit ID. The Android release app ID is a separate required
+   Gradle property.
+
+Keep `key.properties` and the keystore out of source control. Back up the
+upload key securely; losing it can block future Play uploads. No release key
+is included in this workspace.
+
+## iOS release configuration
+
+Debug uses Google's iOS test AdMob application ID. For a release build, create
+the ignored file `ios\Flutter\AdMob.xcconfig` with the production iOS app ID:
+
+```xcconfig
+ADMOB_APPLICATION_ID = ca-app-pub-xxxxxxxxxxxxxxxx~yyyyyyyyyy
 ```
 
-## Share examples
+Build/sign the iOS app on macOS with Xcode and the registered bundle ID
+`com.digitaltech.app`. This Windows environment cannot create or validate a
+signed iOS archive.
 
-```dart
-await ShareService.shareArticle(
-  title: article.title,
-  articleId: article.id.toString(),
-  baseUrl: 'https://myapp.com',
-);
+## App Links and store assets
+
+The Android manifest uses the current production host `ven-app.onrender.com`.
+Publish the matching `assetlinks.json` for `com.venapp.app` with the release
+signing certificate fingerprint and verify the links in Play Console before
+relying on Android App Links. iOS associated domains and the matching Apple
+App Site Association file also require the confirmed domain and Apple signing
+capability.
+
+The generated DT/book icon and splash assets use the current purple/orange UI
+colors and are provisional; obtain owner/brand approval before store
+submission. Create localized store screenshots, listing text, feature
+graphics, privacy policy, and App content declarations in the relevant
+console.
+
+## Local checks
+
+```powershell
+flutter analyze --no-fatal-infos
+flutter test
+flutter build apk --debug
 ```
 
-## Deep link handling
-
-```dart
-final uri = Uri.tryParse(link);
-if (uri != null && uri.pathSegments.length >= 2 && uri.pathSegments[0] == 'article') {
-  final articleId = uri.pathSegments[1];
-  // open ArticleDetailScreen(articleId: articleId)
-}
-```
+See [RELEASE_READINESS.md](./RELEASE_READINESS.md) for tested results,
+unresolved API/console requirements, and the exact release status.

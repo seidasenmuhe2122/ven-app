@@ -9,7 +9,7 @@ class AppLocalizationsAm extends AppLocalizations {
   AppLocalizationsAm([String locale = 'am']) : super(locale);
 
   @override
-  String get appTitle => 'ሮያል ፕሮ';
+  String get appTitle => 'Digital Tech';
 
   @override
   String get home => 'መነሻ';

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import '../l10n/app_localizations.dart';
 import '../screens/feedback_screen.dart';
+import '../services/ad_consent_service.dart';
 import '../services/ad_settings_service.dart';
 import '../services/font_size_service.dart';
 import '../services/language_service.dart';
@@ -25,12 +26,16 @@ class SettingsScreen extends StatelessWidget {
   final AdSettings? adSettings;
 
   String _stripHtml(String value) {
-    return value.replaceAll(RegExp(r'<[^>]*>', multiLine: true), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    return value
+        .replaceAll(RegExp(r'<[^>]*>', multiLine: true), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
   }
 
   Color _parseColor(String value) {
     final normalized = value.trim();
-    final hex = normalized.startsWith('#') ? normalized.substring(1) : normalized;
+    final hex =
+        normalized.startsWith('#') ? normalized.substring(1) : normalized;
     if (hex.length == 3) {
       final expanded = hex.split('').expand((char) => [char, char]).join();
       return Color(int.parse('0xFF$expanded'));
@@ -65,7 +70,8 @@ class SettingsScreen extends StatelessWidget {
         'content': adSettings?.privacyPolicyContent ?? '',
         'fontSize': adSettings?.privacyPolicyTextSize ?? 16,
         'color': adSettings?.privacyPolicyTextColor ?? '#111111',
-        'backgroundColor': adSettings?.privacyPolicyBackgroundColor ?? '#ffffff',
+        'backgroundColor':
+            adSettings?.privacyPolicyBackgroundColor ?? '#ffffff',
       }),
     ];
   }
@@ -85,7 +91,8 @@ class SettingsScreen extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 l10n.languageSelector,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 12),
@@ -113,7 +120,8 @@ class SettingsScreen extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Reading Size',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 12),
@@ -141,13 +149,15 @@ class SettingsScreen extends StatelessWidget {
               leading: const Icon(Icons.language),
               title: Text(l10n.language),
               subtitle: Text(LanguageService.localeLabel(locale)),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
             ),
             ListTile(
               leading: const Icon(Icons.text_fields_rounded),
               title: const Text('Reading Size'),
               subtitle: Text(fontSize.label),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
             ),
             const SizedBox(height: 20),
             const Divider(),
@@ -156,15 +166,20 @@ class SettingsScreen extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: Text(
                 'Policy Pages',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 12),
             ...policySections.map((entry) {
-              final content = _stripHtml((entry.value['content'] as String?) ?? '');
-              final fontSize = ((entry.value['fontSize'] as num?) ?? 16).toDouble();
-              final textColor = _parseColor((entry.value['color'] as String?) ?? '#111111');
-              final bgColor = _parseColor((entry.value['backgroundColor'] as String?) ?? '#ffffff');
+              final content =
+                  _stripHtml((entry.value['content'] as String?) ?? '');
+              final fontSize =
+                  ((entry.value['fontSize'] as num?) ?? 16).toDouble();
+              final textColor =
+                  _parseColor((entry.value['color'] as String?) ?? '#111111');
+              final bgColor = _parseColor(
+                  (entry.value['backgroundColor'] as String?) ?? '#ffffff');
 
               if (content.isEmpty) {
                 return const SizedBox.shrink();
@@ -197,6 +212,32 @@ class SettingsScreen extends StatelessWidget {
               );
             }),
             const Divider(),
+            FutureBuilder<bool>(
+              future: AdConsentService.privacyOptionsRequired(),
+              builder: (context, snapshot) {
+                if (snapshot.data != true) {
+                  return const SizedBox.shrink();
+                }
+                return ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privacy options'),
+                  subtitle: const Text('Review your advertising consent'),
+                  onTap: () async {
+                    final error = await AdConsentService.showPrivacyOptions();
+                    if (error != null && context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Unable to open privacy options: $error',
+                          ),
+                        ),
+                      );
+                    }
+                  },
+                );
+              },
+            ),
+            const Divider(),
             ListTile(
               leading: const Icon(Icons.star_rate_rounded),
               title: const Text('Rate Us'),
@@ -212,7 +253,8 @@ class SettingsScreen extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => FeedbackScreen(baseUrl: AppConfig.apiBaseUrl),
+                    builder: (_) =>
+                        FeedbackScreen(baseUrl: AppConfig.apiBaseUrl),
                   ),
                 );
               },

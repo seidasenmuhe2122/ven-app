@@ -1,17 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 class AdSettings {
   const AdSettings({
-    required this.adsEnabled,
-    required this.bannerAdUnitId,
-    required this.nativeAdUnitId,
+    this.adsEnabled = false,
+    this.bannerAdUnitId = '',
+    this.nativeAdUnitId = '',
     this.logoUrl,
     this.adNetwork = 'admob',
     this.admobAppId = '',
-    this.interstitialAdUnitId = 'ca-app-pub-3940256099942544/1033173712',
-    this.rewardedAdUnitId = 'ca-app-pub-3940256099942544/5224354917',
+    this.interstitialAdUnitId = '',
+    this.rewardedAdUnitId = '',
     this.adPlacements = const <String, dynamic>{},
     this.adNetworks = const <Map<String, dynamic>>[],
     this.adCampaigns = const <Map<String, dynamic>>[],
@@ -61,17 +64,32 @@ class AdSettings {
   final String privacyPolicyTextColor;
   final String privacyPolicyBackgroundColor;
 
-  factory AdSettings.fromJson(Map<String, dynamic> json) {
+  factory AdSettings.fromJson(
+    Map<String, dynamic> json, {
+    bool canRequestAds = false,
+  }) {
+    final bannerAdUnitId = (json['banner_ad_unit_id'] ?? '').toString();
+    final nativeAdUnitId = (json['native_ad_unit_id'] ?? '').toString();
+    final hasProductionBannerId = bannerAdUnitId.isNotEmpty &&
+        !bannerAdUnitId.contains('ca-app-pub-3940256099942544');
+    final productionNativeAdUnitId =
+        nativeAdUnitId.contains('ca-app-pub-3940256099942544')
+            ? ''
+            : nativeAdUnitId;
     return AdSettings(
-      adsEnabled: json['ads_enabled'] ?? true,
-      bannerAdUnitId: json['banner_ad_unit_id'] ?? 'ca-app-pub-3940256099942544/6300978111',
-      nativeAdUnitId: json['native_ad_unit_id'] ?? 'ca-app-pub-3940256099942544/2247696110',
-      logoUrl: json['logo'] == null || json['logo'].toString().isEmpty ? null : json['logo'].toString(),
+      adsEnabled:
+          json['ads_enabled'] == true && canRequestAds && hasProductionBannerId,
+      bannerAdUnitId: bannerAdUnitId,
+      nativeAdUnitId: productionNativeAdUnitId,
+      logoUrl: json['logo'] == null || json['logo'].toString().isEmpty
+          ? null
+          : json['logo'].toString(),
       adNetwork: json['ad_network'] ?? 'admob',
       admobAppId: json['admob_app_id'] ?? '',
-      interstitialAdUnitId: json['interstitial_ad_unit_id'] ?? 'ca-app-pub-3940256099942544/1033173712',
-      rewardedAdUnitId: json['rewarded_ad_unit_id'] ?? 'ca-app-pub-3940256099942544/5224354917',
-      adPlacements: Map<String, dynamic>.from(json['ad_placements'] ?? const <String, dynamic>{}),
+      interstitialAdUnitId: json['interstitial_ad_unit_id'] ?? '',
+      rewardedAdUnitId: json['rewarded_ad_unit_id'] ?? '',
+      adPlacements: Map<String, dynamic>.from(
+          json['ad_placements'] ?? const <String, dynamic>{}),
       adNetworks: _mapList(json['ad_networks']),
       adCampaigns: _mapList(json['ad_campaigns']),
       aboutContent: json['about_content'] ?? '',
@@ -89,29 +107,58 @@ class AdSettings {
       privacyPolicyContent: json['privacy_policy_content'] ?? '',
       privacyPolicyTextSize: (json['privacy_policy_text_size'] ?? 16) as int,
       privacyPolicyTextColor: json['privacy_policy_text_color'] ?? '#111111',
-      privacyPolicyBackgroundColor: json['privacy_policy_background_color'] ?? '#ffffff',
+      privacyPolicyBackgroundColor:
+          json['privacy_policy_background_color'] ?? '#ffffff',
     );
   }
 
   static List<Map<String, dynamic>> _mapList(dynamic value) {
     if (value is! List) return const <Map<String, dynamic>>[];
-    return value.whereType<Map>().map((item) => Map<String, dynamic>.from(item)).toList(growable: false);
+    return value
+        .whereType<Map>()
+        .map((item) => Map<String, dynamic>.from(item))
+        .toList(growable: false);
   }
 }
 
 class AdSettingsService {
-  static Future<AdSettings> fetchSettings({required String baseUrl}) async {
-    final response = await http.get(Uri.parse('$baseUrl/api/settings/1/'));
+  static const Duration _requestTimeout = Duration(seconds: 15);
 
-    if (response.statusCode != 200) {
-      return const AdSettings(
-        adsEnabled: true,
-        bannerAdUnitId: 'ca-app-pub-3940256099942544/6300978111',
-        nativeAdUnitId: 'ca-app-pub-3940256099942544/2247696110',
-      );
+  static Future<AdSettings> fetchSettings({
+    required String baseUrl,
+    required bool canRequestAds,
+  }) async {
+    try {
+      final response = await http
+          .get(Uri.parse('$baseUrl/api/settings/1/'))
+          .timeout(_requestTimeout);
+
+      if (response.statusCode != 200) {
+        debugPrint(
+          'Ad settings request failed with HTTP ${response.statusCode}; ads are disabled.',
+        );
+        return const AdSettings();
+      }
+
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return AdSettings.fromJson(data, canRequestAds: canRequestAds);
+    } on FormatException catch (error) {
+      debugPrint('Ad settings response was invalid; ads are disabled: $error');
+      return const AdSettings();
+    } on TypeError catch (error) {
+      debugPrint(
+          'Ad settings response had an invalid shape; ads are disabled: $error');
+      return const AdSettings();
+    } on http.ClientException catch (error) {
+      debugPrint('Ad settings HTTP request failed; ads are disabled: $error');
+      return const AdSettings();
+    } on SocketException catch (error) {
+      debugPrint(
+          'Ad settings network request failed; ads are disabled: $error');
+      return const AdSettings();
+    } on TimeoutException catch (error) {
+      debugPrint('Ad settings request timed out; ads are disabled: $error');
+      return const AdSettings();
     }
-
-    final data = jsonDecode(response.body) as Map<String, dynamic>;
-    return AdSettings.fromJson(data);
   }
 }

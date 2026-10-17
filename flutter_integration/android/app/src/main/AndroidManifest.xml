@@ -4,11 +4,12 @@
 
     <application
         android:name="${applicationName}"
-        android:label="Royal Pro"
+        android:label="Digital Tech"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher">
         <meta-data
             android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-3940256099942544~3347511713" />
+            android:value="${admobApplicationId}" />
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
@@ -34,11 +35,11 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:scheme="https"
-                    android:host="myapp.com"
+                    android:host="ven-app.onrender.com"
                     android:pathPrefix="/article/" />
                 <data
                     android:scheme="https"
-                    android:host="myapp.com"
+                    android:host="ven-app.onrender.com"
                     android:pathPrefix="/articles/" />
             </intent-filter>
         </activity>

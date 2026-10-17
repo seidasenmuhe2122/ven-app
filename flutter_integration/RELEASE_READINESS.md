@@ -43,7 +43,7 @@ Source inspection found these implemented surfaces; **none were verified end-to-
 - Backend-driven ad settings plus banner/native AdMob widgets.
 - App-version/update check.
 
-**Verified functional blocker:** `ArticleDetailScreen` currently renders fixed sample paragraphs and a generated “Royal Pro Article” title; it does not load the selected article from the API. Thus opening an article does not display the article selected in the feed. The current mobile service has list/category fetching, but no article-detail fetch method. This requires a confirmed backend detail endpoint and product-approved loading/error behavior before changing the screen safely.
+**Verified functional blocker:** `ArticleDetailScreen` currently renders fixed sample paragraphs and a generated “Royal Pro Article” title; it does not load the selected article from the API. Thus opening an article does not display the article selected in the feed. The existing Django backend supports public numeric retrieval at `/api/articles/<id>/` through `ArticleViewSet.retrieve`, and its serializer returns article content, so no new backend endpoint is needed. The mobile service still needs a detail-fetch method and appropriate loading/error behavior.
 
 ## Security, permissions, network, and privacy
 
@@ -52,6 +52,8 @@ Source inspection found these implemented surfaces; **none were verified end-to-
 - Authentication sends credentials to the configured API and stores the returned token using secure storage. Bookmarks, article cache, and reading history use local `shared_preferences`; their data collection/retention implications need to be reflected accurately in the privacy disclosures.
 - AdMob is integrated. The Android manifest currently contains Google's **sample/test AdMob application ID** (`ca-app-pub-3940256099942544~3347511713`), and Dart defaults include Google test ad-unit IDs. These are not production identifiers. Replace them with the app's real AdMob configuration and complete consent/privacy work before release.
 - `myapp.com` is a placeholder host in the Android App Links manifest and integration README. No Android `assetlinks.json`, production domain ownership, package ID, or signing-certificate fingerprint is supplied. Verified App Links cannot be confirmed.
+- The user-provided Android ID `com.digitaltech.app` conflicts with an existing public Google Play listing titled “Digital Technology Pathshala.” Do not use it for this app. A replacement candidate `com.venapp.app` returned Not Found in the public Play lookup and is absent from the workspace; private account registration is not publicly verifiable. The iOS ID `com.digitaltech.app` returned no public Apple listing; private registration is likewise unverified.
+- The user supplied `https://ven-app.onrender.com` as the API base. Unauthenticated requests to the existing API paths `/api/categories/`, `/api/articles/`, `/api/settings/1/`, and `/api/login/` returned HTTP 404. The user requested continuing and expects to correct the API URL later; production workflows are not verified.
 - The Settings screen can display backend-provided privacy-policy text, but an active privacy-policy URL both in the app and on the store listing is not established by this workspace.
 - The final collection/sharing behavior of dependencies, merged Android permissions, server-side collection, retention, and advertising consent were not dynamically inspected. Complete Data safety answers only after a full SDK/backend data inventory.
 

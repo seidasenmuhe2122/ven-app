@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -11,6 +12,7 @@ class ArticleSummary {
   const ArticleSummary({
     required this.id,
     required this.title,
+    required this.slug,
     required this.summary,
     required this.categoryName,
     required this.status,
@@ -22,6 +24,7 @@ class ArticleSummary {
 
   final int id;
   final String title;
+  final String slug;
   final String summary;
   final String categoryName;
   final String status;
@@ -32,9 +35,24 @@ class ArticleSummary {
 
   static String _plainText(String value) {
     return value
+        .replaceAll(
+            RegExp(r'<br\s*/?>|</p>|</div>|</h[1-6]>', caseSensitive: false),
+            '\n')
         .replaceAll(RegExp(r'<[^>]*>'), ' ')
-        .replaceAll(RegExp(r'&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAllMapped(
+          RegExp(r'&nbsp;|&amp;|&lt;|&gt;|&quot;|&#39;'),
+          (match) => const {
+            '&nbsp;': ' ',
+            '&amp;': '&',
+            '&lt;': '<',
+            '&gt;': '>',
+            '&quot;': '"',
+            '&#39;': "'",
+          }[match[0]]!,
+        )
+        .replaceAll(RegExp(r'[ \t]+'), ' ')
+        .replaceAll(RegExp(r' *\n *'), '\n')
+        .replaceAll(RegExp(r'\n{3,}'), '\n\n')
         .trim();
   }
 
@@ -42,17 +60,110 @@ class ArticleSummary {
     final imageValue = json['image_url'] ?? json['cover_image'];
     final summaryValue = json['summary'] ?? json['content'] ?? '';
     return ArticleSummary(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
       title: (json['title'] ?? 'Untitled article').toString(),
-      summary: _plainText(summaryValue.toString()),
-      categoryName: (json['category_name'] ?? json['category'] ?? 'General').toString(),
+      slug: (json['slug'] ?? '').toString(),
+      summary:
+          _plainText(summaryValue.toString()).replaceAll(RegExp(r'\s+'), ' '),
+      categoryName:
+          (json['category_name'] ?? json['category'] ?? 'General').toString(),
       status: (json['status'] ?? 'published').toString(),
-      viewsCount: json['views_count'] is int ? json['views_count'] as int : int.tryParse('${json['views_count']}') ?? 0,
-      readTimeMinutes: json['read_time_minutes'] is int ? json['read_time_minutes'] as int : int.tryParse('${json['read_time_minutes']}') ?? 0,
-      imageUrl: imageValue == null || imageValue.toString().isEmpty ? null : imageValue.toString(),
-      publishedAt: json['published_at'] == null ? null : DateTime.tryParse(json['published_at'].toString()),
+      viewsCount: json['views_count'] is int
+          ? json['views_count'] as int
+          : int.tryParse('${json['views_count']}') ?? 0,
+      readTimeMinutes: json['read_time_minutes'] is int
+          ? json['read_time_minutes'] as int
+          : int.tryParse('${json['read_time_minutes']}') ?? 0,
+      imageUrl: imageValue == null || imageValue.toString().isEmpty
+          ? null
+          : imageValue.toString(),
+      publishedAt: json['published_at'] == null
+          ? null
+          : DateTime.tryParse(json['published_at'].toString()),
     );
   }
+}
+
+class ArticleDetail {
+  const ArticleDetail({
+    required this.id,
+    required this.title,
+    required this.slug,
+    required this.summary,
+    required this.content,
+    required this.categoryName,
+    required this.viewsCount,
+    required this.readTimeMinutes,
+    required this.imageUrl,
+    required this.publishedAt,
+    this.isOffline = false,
+  });
+
+  final int id;
+  final String title;
+  final String slug;
+  final String summary;
+  final String content;
+  final String categoryName;
+  final int viewsCount;
+  final int readTimeMinutes;
+  final String? imageUrl;
+  final DateTime? publishedAt;
+  final bool isOffline;
+
+  List<String> get paragraphs => content
+      .split(RegExp(r'\n+'))
+      .map((paragraph) => paragraph.trim())
+      .where((paragraph) => paragraph.isNotEmpty)
+      .toList(growable: false);
+
+  factory ArticleDetail.fromJson(Map<String, dynamic> json,
+      {bool isOffline = false}) {
+    final summary =
+        ArticleSummary._plainText((json['summary'] ?? '').toString());
+    final rawContent = (json['content'] ?? '').toString();
+    final imageValue = json['image_url'] ?? json['cover_image'];
+    return ArticleDetail(
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
+      title: (json['title'] ?? 'Untitled article').toString(),
+      slug: (json['slug'] ?? '').toString(),
+      summary: summary.replaceAll(RegExp(r'\s+'), ' '),
+      content:
+          rawContent.isEmpty ? summary : ArticleSummary._plainText(rawContent),
+      categoryName:
+          (json['category_name'] ?? json['category'] ?? 'General').toString(),
+      viewsCount: json['views_count'] is int
+          ? json['views_count'] as int
+          : int.tryParse('${json['views_count']}') ?? 0,
+      readTimeMinutes: json['read_time_minutes'] is int
+          ? json['read_time_minutes'] as int
+          : int.tryParse('${json['read_time_minutes']}') ?? 0,
+      imageUrl: imageValue == null || imageValue.toString().isEmpty
+          ? null
+          : imageValue.toString(),
+      publishedAt: json['published_at'] == null
+          ? null
+          : DateTime.tryParse(json['published_at'].toString()),
+      isOffline: isOffline,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'slug': slug,
+        'summary': summary,
+        'content': content,
+        'category_name': categoryName,
+        'views_count': viewsCount,
+        'read_time_minutes': readTimeMinutes,
+        'image_url': imageUrl,
+        'published_at': publishedAt?.toIso8601String(),
+      };
 }
 
 class ArticleCategory {
@@ -68,7 +179,9 @@ class ArticleCategory {
 
   factory ArticleCategory.fromJson(Map<String, dynamic> json) {
     return ArticleCategory(
-      id: json['id'] is int ? json['id'] as int : int.tryParse('${json['id']}') ?? 0,
+      id: json['id'] is int
+          ? json['id'] as int
+          : int.tryParse('${json['id']}') ?? 0,
       name: (json['name'] ?? 'General').toString(),
       slug: (json['slug'] ?? '').toString(),
     );
@@ -77,6 +190,8 @@ class ArticleCategory {
 
 class ArticleService {
   static const String _cachedArticlesKey = 'cached_articles';
+  static const Duration _requestTimeout = Duration(seconds: 15);
+  static final http.Client _httpClient = http.Client();
 
   static Future<bool> hasInternetConnection() async {
     final connectivityResult = await Connectivity().checkConnectivity();
@@ -89,7 +204,8 @@ class ArticleService {
     return Future.value('${_cachedArticlesKey}_${safeCategory}_${safeSearch}');
   }
 
-  static Future<List<ArticleSummary>> getCachedArticles({String? search, int? categoryId}) async {
+  static Future<List<ArticleSummary>> getCachedArticles(
+      {String? search, int? categoryId}) async {
     final prefs = await SharedPreferences.getInstance();
     final key = await _cacheKey(search: search, categoryId: categoryId);
     final cached = prefs.getString(key);
@@ -105,7 +221,8 @@ class ArticleService {
             : <dynamic>[];
 
     return items
-        .map((item) => ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
         .where((article) => article.status.toLowerCase() == 'published')
         .toList();
   }
@@ -121,6 +238,7 @@ class ArticleService {
         .map((article) => {
               'id': article.id,
               'title': article.title,
+              'slug': article.slug,
               'summary': article.summary,
               'content': article.summary,
               'category': article.categoryName,
@@ -135,7 +253,8 @@ class ArticleService {
     await prefs.setString(key, jsonEncode(payload));
   }
 
-  static Future<List<ArticleCategory>> fetchCategories({String? baseUrl}) async {
+  static Future<List<ArticleCategory>> fetchCategories(
+      {String? baseUrl}) async {
     final url = Uri.parse('${baseUrl ?? AppConfig.apiBaseUrl}/api/categories/');
     final response = await http.get(
       url,
@@ -154,8 +273,83 @@ class ArticleService {
             : <dynamic>[];
 
     return items
-        .map((item) => ArticleCategory.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            ArticleCategory.fromJson(Map<String, dynamic>.from(item as Map)))
         .toList();
+  }
+
+  static Future<ArticleDetail?> getCachedArticleDetail(int articleId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final cached = prefs.getString('${_cachedArticlesKey}_detail_$articleId');
+    if (cached == null || cached.isEmpty) return null;
+
+    final decoded = jsonDecode(cached);
+    if (decoded is! Map) {
+      throw const FormatException('Cached article data has an invalid format.');
+    }
+    return ArticleDetail.fromJson(
+      Map<String, dynamic>.from(decoded),
+      isOffline: true,
+    );
+  }
+
+  static Future<ArticleDetail> fetchArticleById({
+    required String articleId,
+    String? baseUrl,
+    http.Client? client,
+  }) async {
+    final id = int.tryParse(articleId);
+    if (id == null || id <= 0) {
+      throw const FormatException('Article ID must be a positive integer.');
+    }
+
+    final normalizedBase =
+        (baseUrl ?? AppConfig.apiBaseUrl).replaceAll(RegExp(r'/+$'), '');
+    final uri = Uri.parse('$normalizedBase/api/articles/$id/');
+    final cachedArticle = () => getCachedArticleDetail(id);
+
+    late final http.Response response;
+    try {
+      response = await (client ?? _httpClient).get(uri, headers: const {
+        'Accept': 'application/json'
+      }).timeout(_requestTimeout);
+    } on SocketException {
+      final cached = await cachedArticle();
+      if (cached != null) return cached;
+      rethrow;
+    } on TimeoutException {
+      final cached = await cachedArticle();
+      if (cached != null) return cached;
+      rethrow;
+    } on http.ClientException {
+      final cached = await cachedArticle();
+      if (cached != null) return cached;
+      rethrow;
+    }
+
+    if (response.statusCode != 200) {
+      if (response.statusCode == 404) {
+        throw HttpException('Article not found.', uri: uri);
+      }
+      throw HttpException(
+          'Failed to load article (HTTP ${response.statusCode}).',
+          uri: uri);
+    }
+
+    final decoded = jsonDecode(response.body);
+    if (decoded is! Map) {
+      throw const FormatException('Article response has an invalid format.');
+    }
+    final article = ArticleDetail.fromJson(Map<String, dynamic>.from(decoded));
+    if (article.id != id) {
+      throw const FormatException(
+          'Article response ID does not match the requested article.');
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(
+        '${_cachedArticlesKey}_detail_$id', jsonEncode(article.toJson()));
+    return article;
   }
 
   static Future<List<ArticleSummary>> fetchPublishedArticles({
@@ -178,7 +372,8 @@ class ArticleService {
                 : <dynamic>[];
 
         return items
-            .map((item) => ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
+            .map((item) =>
+                ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
             .where((article) => article.status.toLowerCase() == 'published')
             .toList();
       }
@@ -193,7 +388,8 @@ class ArticleService {
       queryParameters['category'] = categoryId.toString();
     }
 
-    final uri = Uri.parse('${baseUrl ?? AppConfig.apiBaseUrl}/api/articles/').replace(
+    final uri =
+        Uri.parse('${baseUrl ?? AppConfig.apiBaseUrl}/api/articles/').replace(
       queryParameters: queryParameters,
     );
 
@@ -214,7 +410,8 @@ class ArticleService {
             : <dynamic>[];
 
     final articles = items
-        .map((item) => ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
+        .map((item) =>
+            ArticleSummary.fromJson(Map<String, dynamic>.from(item as Map)))
         .where((article) => article.status.toLowerCase() == 'published')
         .toList()
       ..sort((a, b) {
@@ -223,7 +420,8 @@ class ArticleService {
         return bTime.compareTo(aTime);
       });
 
-    await cacheArticlesResponse(articles: articles, search: search, categoryId: categoryId);
+    await cacheArticlesResponse(
+        articles: articles, search: search, categoryId: categoryId);
     return articles;
   }
 }

@@ -35,7 +35,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     try {
       final username = _usernameController.text.trim();
-      final password = _passwordController.text.trim();
+      final password = _passwordController.text;
       final email = _emailController.text.trim();
 
       final response = _isLogin
@@ -61,7 +61,9 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_isLogin ? 'Logged in successfully.' : 'Account created successfully.'),
+          content: Text(_isLogin
+              ? 'Logged in successfully.'
+              : 'Account created successfully.'),
         ),
       );
       Navigator.of(context).pop();
@@ -110,11 +112,15 @@ class _AuthScreenState extends State<AuthScreen> {
                         showSelectedIcon: false,
                         style: SegmentedButton.styleFrom(
                           backgroundColor: Colors.grey.shade100,
-                          selectedBackgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                          foregroundColor: Theme.of(context).colorScheme.onSurface,
-                          selectedForegroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                          selectedBackgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          foregroundColor:
+                              Theme.of(context).colorScheme.onSurface,
+                          selectedForegroundColor:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
                           side: BorderSide(color: Colors.grey.shade300),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 10),
                         ),
                         onSelectionChanged: (value) {
                           setState(() => _isLogin = value.first);
@@ -131,7 +137,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             prefixIcon: Icon(Icons.email_outlined),
                           ),
                           validator: (value) {
-                            if (!_isLogin && (value == null || value.trim().isEmpty)) {
+                            if (!_isLogin &&
+                                (value == null || value.trim().isEmpty)) {
                               return 'Please enter your email.';
                             }
                             return null;
@@ -178,7 +185,8 @@ class _AuthScreenState extends State<AuthScreen> {
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               )
                             : const Icon(Icons.lock_open),
                         label: Text(_isLogin ? 'Login' : 'Create account'),

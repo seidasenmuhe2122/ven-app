@@ -57,7 +57,7 @@
     },
     {
       "name": "code_assets",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/code_assets-2.1.0",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/code_assets-1.2.1",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -201,13 +201,13 @@
     },
     {
       "name": "google_mobile_ads",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/google_mobile_ads-5.3.1",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/google_mobile_ads-9.1.0",
       "packageUri": "lib/",
-      "languageVersion": "2.17"
+      "languageVersion": "3.10"
     },
     {
       "name": "hooks",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/hooks-2.2.0",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/hooks-2.0.2",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -309,7 +309,7 @@
     },
     {
       "name": "meta",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.19.0",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/meta-1.18.3",
       "packageUri": "lib/",
       "languageVersion": "3.5"
     },
@@ -327,7 +327,7 @@
     },
     {
       "name": "objective_c",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/objective_c-9.6.2",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/objective_c-9.5.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -393,9 +393,9 @@
     },
     {
       "name": "petitparser",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/petitparser-7.1.0",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/petitparser-7.0.2",
       "packageUri": "lib/",
-      "languageVersion": "3.13"
+      "languageVersion": "3.8"
     },
     {
       "name": "platform",
@@ -417,7 +417,7 @@
     },
     {
       "name": "record_use",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/record_use-1.1.1",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/record_use-0.6.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -579,7 +579,7 @@
     },
     {
       "name": "vector_math",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.3",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/vector_math-2.4.0",
       "packageUri": "lib/",
       "languageVersion": "3.10"
     },
@@ -633,9 +633,9 @@
     },
     {
       "name": "xml",
-      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/xml-7.1.0",
+      "rootUri": "file:///C:/Users/XIO/AppData/Local/Pub/Cache/hosted/pub.dev/xml-7.0.1",
       "packageUri": "lib/",
-      "languageVersion": "3.13"
+      "languageVersion": "3.11"
     },
     {
       "name": "yaml",
