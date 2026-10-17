@@ -33,9 +33,23 @@ if not SECRET_KEY:
     SECRET_KEY = secrets.token_urlsafe(64)
 
 configured_hosts = os.environ.get('DJANGO_ALLOWED_HOSTS', '')
-if IS_PRODUCTION and not configured_hosts.strip():
+render_external_hostname = os.environ.get('RENDER_EXTERNAL_HOSTNAME', '').strip()
+render_service_name = os.environ.get('RENDER_SERVICE_NAME', '').strip()
+render_hosts = []
+if render_external_hostname:
+    render_hosts.append(render_external_hostname)
+if render_service_name:
+    render_hosts.append(f'{render_service_name}.onrender.com')
+
+candidate_hosts = [host.strip() for host in (configured_hosts or '').split(',') if host.strip()]
+candidate_hosts.extend(render_hosts)
+if not candidate_hosts:
+    candidate_hosts = ['localhost', '127.0.0.1', 'testserver']
+
+if IS_PRODUCTION and not configured_hosts.strip() and not render_hosts:
     raise RuntimeError('DJANGO_ALLOWED_HOSTS must be configured in production.')
-ALLOWED_HOSTS = [host.strip() for host in (configured_hosts or 'localhost,127.0.0.1,testserver').split(',') if host.strip()]
+
+ALLOWED_HOSTS = candidate_hosts
 if IS_PRODUCTION and '*' in ALLOWED_HOSTS:
     raise RuntimeError('Wildcard DJANGO_ALLOWED_HOSTS is not allowed in production.')
 
@@ -235,7 +249,7 @@ CORS_ALLOWED_ORIGINS = [
     if origin.strip()
 ]
 
-CSRF_TRUSTED_ORIGINS = [
+configured_csrf_origins = [
     origin.strip()
     for origin in os.environ.get(
         'DJANGO_CSRF_TRUSTED_ORIGINS',
@@ -243,6 +257,15 @@ CSRF_TRUSTED_ORIGINS = [
     ).split(',')
     if origin.strip()
 ]
+
+for hostname in ALLOWED_HOSTS:
+    if hostname.startswith('localhost') or hostname.startswith('127.0.0.1') or hostname.startswith('testserver'):
+        continue
+    configured_csrf_origins.append(f'https://{hostname}')
+    if not hostname.startswith('http://') and not hostname.startswith('https://'):
+        configured_csrf_origins.append(f'http://{hostname}')
+
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(configured_csrf_origins))
 
 SECURE_MODE = IS_PRODUCTION or os.environ.get('DJANGO_SECURE', 'False').lower() in {'1', 'true', 'yes', 'on'}
 SECURE_CONTENT_TYPE_NOSNIFF = True
