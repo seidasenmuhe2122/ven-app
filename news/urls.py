@@ -8,7 +8,6 @@ from .views import (
     DashboardStatsView,
     DashboardWidgetsView,
     FeedbackSubmissionView,
-    PublicAnnouncementHistoryView,
     ThrottledObtainAuthToken,
     RegisterView,
     SystemSettingViewSet,
@@ -28,11 +27,6 @@ router.register(r'audit-logs', AuditLogViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path('login/', ThrottledObtainAuthToken.as_view(), name='api_login'),
-    path(
-        'notifications/public-announcements/',
-        PublicAnnouncementHistoryView.as_view(),
-        name='public-notification-announcements',
-    ),
     path('register/', RegisterView.as_view(), name='api_register'),
     path('me/', UserDetailView.as_view(), name='api_me'),
     path('dashboard-stats/', DashboardStatsView.as_view(), name='dashboard-stats'),
