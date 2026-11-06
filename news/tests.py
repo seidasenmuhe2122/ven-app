@@ -267,6 +267,63 @@ class SecurityBoundaryTests(TestCase):
         self.assertNotContains(response, admin_path('login/'))
 
 
+class PublicAnnouncementHistoryTests(TestCase):
+    def test_only_sent_broadcasts_are_public(self):
+        public = PushNotification.objects.create(
+            title='Public announcement',
+            body='Sent to everyone',
+            target_type=PushNotification.TARGET_ALL,
+            is_sent=True,
+            sent_at=timezone.now(),
+        )
+        PushNotification.objects.create(
+            title='Targeted notification',
+            body='Not public',
+            target_type=PushNotification.TARGET_TOPIC,
+            topic='staff',
+            is_sent=True,
+            sent_at=timezone.now(),
+        )
+        PushNotification.objects.create(
+            title='Unsent announcement',
+            body='Still pending',
+            target_type=PushNotification.TARGET_ALL,
+            is_sent=False,
+        )
+
+        response = self.client.get('/api/notifications/public-announcements/')
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            [item['id'] for item in response.json()['results']],
+            [public.pk],
+        )
+        self.assertEqual(response.json()['results'][0]['title'], public.title)
+        self.assertFalse(response.json()['has_more'])
+
+    def test_public_announcements_validate_and_bound_limit(self):
+        invalid = self.client.get(
+            '/api/notifications/public-announcements/?limit=invalid',
+        )
+        self.assertEqual(invalid.status_code, 400)
+
+        for index in range(3):
+            PushNotification.objects.create(
+                title=f'Announcement {index}',
+                body='Public message',
+                target_type=PushNotification.TARGET_ALL,
+                is_sent=True,
+                sent_at=timezone.now(),
+            )
+
+        limited = self.client.get(
+            '/api/notifications/public-announcements/?limit=2',
+        )
+        self.assertEqual(limited.status_code, 200)
+        self.assertEqual(len(limited.json()['results']), 2)
+        self.assertTrue(limited.json()['has_more'])
+
+
 class CSRFSecurityTests(TestCase):
     def setUp(self):
         self.editor = CustomUser.objects.create_user(

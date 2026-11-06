@@ -302,6 +302,39 @@ class UserDetailView(APIView):
         })
 
 
+class PublicAnnouncementHistoryView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        try:
+            limit = min(max(int(request.query_params.get('limit', 50)), 1), 100)
+        except (TypeError, ValueError):
+            return Response(
+                {'detail': 'limit must be an integer.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        announcements = list(
+            PushNotification.objects.filter(
+                target_type=PushNotification.TARGET_ALL,
+                is_sent=True,
+                sent_at__isnull=False,
+            ).order_by('-sent_at', '-pk')[:limit + 1]
+        )
+        has_more = len(announcements) > limit
+        results = [
+            {
+                'id': notification.pk,
+                'title': notification.title,
+                'body': notification.body,
+                'article_id': notification.article_id,
+                'created_at': notification.sent_at,
+            }
+            for notification in announcements[:limit]
+        ]
+        return Response({'results': results, 'has_more': has_more})
+
+
 class FeedbackSubmissionView(APIView):
     permission_classes = [permissions.AllowAny]
     parser_classes = [JSONParser]
