@@ -24,3 +24,7 @@ services:
         value: https://ven-app.onrender.com
       - key: DATABASE_URL
         sync: false
+      - key: FIREBASE_PROJECT_ID
+        value: ven-app-eefd2
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false

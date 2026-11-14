@@ -23,6 +23,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path(settings.ADMIN_URL, include((admin.site.get_urls(), 'admin'), namespace='custom_admin')),
     path('api/', include('news.urls')),
+    path('api/v1/', include('news.urls')),
 ]
 
 if settings.DEBUG:

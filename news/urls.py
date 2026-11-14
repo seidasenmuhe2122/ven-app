@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from .announcements import AdminAnnouncementCreateView
 from .views import (
     AnalyticsDashboardView,
     ArticleViewSet,
@@ -25,6 +26,7 @@ router.register(r'settings', SystemSettingViewSet)
 router.register(r'audit-logs', AuditLogViewSet)
 
 urlpatterns = [
+    path('admin/announcements/', AdminAnnouncementCreateView.as_view(), name='admin-announcements'),
     path('', include(router.urls)),
     path('login/', ThrottledObtainAuthToken.as_view(), name='api_login'),
     path('register/', RegisterView.as_view(), name='api_register'),
