@@ -1,8 +1,9 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .announcements import AdminAnnouncementCreateView
-from .firebase_admin_content import FirebaseAdminArticleDeleteView
+from .firebase_admin_content import FirebaseAdminArticleView
 from .firebase_admin_dashboard import FirebaseAdminDashboardView
+from .firebase_article_images import FirebaseArticleImageView
 from .views import (
     AnalyticsDashboardView,
     ArticleViewSet,
@@ -30,9 +31,19 @@ router.register(r'audit-logs', AuditLogViewSet)
 urlpatterns = [
     path('admin/announcements/', AdminAnnouncementCreateView.as_view(), name='admin-announcements'),
     path(
+        'admin/firebase-articles/',
+        FirebaseAdminArticleView.as_view(),
+        name='firebase-admin-article-create',
+    ),
+    path(
         'admin/firebase-articles/<str:article_id>/',
-        FirebaseAdminArticleDeleteView.as_view(),
-        name='firebase-admin-article-delete',
+        FirebaseAdminArticleView.as_view(),
+        name='firebase-admin-article-detail',
+    ),
+    path(
+        'articles/<str:article_id>/image/',
+        FirebaseArticleImageView.as_view(),
+        name='firebase-article-image',
     ),
     path('admin/firebase-dashboard/', FirebaseAdminDashboardView.as_view(), name='firebase-admin-dashboard'),
     path('', include(router.urls)),
